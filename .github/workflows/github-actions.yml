@@ -7,20 +7,48 @@ on:
         branches: [ "main" ]
     workflow_dispatch:
     
-
 jobs:
     build-job:
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout code
             - uses: actions/checkout@v3
-            - run: python3 -V
-    test-job:
+            
+            - name: Build Docker Image
+            - run: |
+                docker build -t ${{ secrets.DOCKER_USER }}/flask-build:latest
+                docker login -u ${{ secrets.DOCKER_USER}} -p ${{ secrets.DOCKER_PASSWORD }}
+                docker push ${{ secrets.DOCKER_USER}}/flask-build:latest
+                
+    sast-test-job:
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout code
             - uses: actions/checkout@v3
-            - run: python hellopuc.py
+
+            - name: Install dependencies
+            - run: |
+                pip install -r requirements.txt
+                pip install bandit
+
+            - name: Run Bandit test
+            - run: |
+                echo "Rodando teste Bandit!"
+                bandit -r app.py -f json -o bandit-outpus.json || true
+
+            - name: Upload Bandit report
+            - uses: actions/upload-artifact@v3
+              with:
+                   name: bandit-report
+                   path: bandit-output.json
+                
     deploy-job:
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout code
             - uses: actions/checkout@v3
-            - run: echo "Sucesso, tudo feito! :)"
+
+            - name: Deploy
+            - run: |
+                echo "Iniciando deploy..."
+                docker pull ${{ secrets.DOCKER_USER }}/flask-build:latest
