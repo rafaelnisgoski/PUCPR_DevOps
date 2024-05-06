@@ -25,12 +25,7 @@ jobs:
                 pip install -r requirements.txt
                 pip install bandit
                 echo "Rodando teste Bandit!"
-                bandit -r app.py -f json -o bandit-outpus.json || true
-
-            - uses: actions/upload-artifact@v3
-              with:
-                   name: bandit-report
-                   path: bandit-output.json
+                bandit -r app.py
                 
     deploy-job:
         runs-on: ubuntu-latest
